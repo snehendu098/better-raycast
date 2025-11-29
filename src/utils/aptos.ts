@@ -1,7 +1,9 @@
 import {
+  AccountTransaction,
   AptosJSProClient,
   convertAptosAccountToAccountInfo,
   convertAptosAccountToSigner,
+  FungibleAssetBalance,
 } from "@aptos-labs/js-pro";
 import { Account, Ed25519PrivateKey, PrivateKey, PrivateKeyVariants, Network } from "@aptos-labs/ts-sdk";
 import { LocalStorage } from "@raycast/api";
@@ -87,7 +89,7 @@ export function getClientWithAccount(network: NetworkType, account: Account): Ap
 /**
  * Get Explorer URL for the specified network
  */
-export function getExplorerUrl(type: "account" | "txn", hash: string, network: NetworkType): string {
+export function getExplorerUrl(type: "account" | "txn" | "fungible_asset", hash: string, network: NetworkType): string {
   return `${EXPLORER_BASE_URL}/${type}/${hash}?network=${network}`;
 }
 
@@ -118,8 +120,11 @@ export function formatAddress(address: string): string {
  */
 export async function getBalance(address: string, network: NetworkType): Promise<number> {
   try {
+    console.log(network);
     const client = getClient(network);
-    const balance = await client.fetchAptBalance({ address });
+    const balance = await client.fetchBalance({ address, asset: "0xa" });
+
+    console.log(balance, address);
     return Number(balance) / OCTAS_PER_APT;
   } catch (error) {
     // Account might not exist yet (no balance)
@@ -135,11 +140,22 @@ export async function getAllBalances(address: string, network: NetworkType): Pro
     const client = getClient(network);
     const { balances } = await client.fetchAccountCoins({ address });
 
-    return balances.map((coin: any) => ({
-      coinType: coin.metadata?.symbol || coin.asset_type || "Unknown",
-      amount: Number(coin.amount) / OCTAS_PER_APT,
-      ...coin,
-    }));
+    console.log(balances);
+
+    return balances.map((coin: FungibleAssetBalance) => {
+      const decimals = coin.metadata?.decimals ?? 8;
+      return {
+        symbol: coin.metadata?.symbol || "Unknown",
+        name: coin.metadata?.name || "Unknown",
+        amount: Number(coin.amount) / Math.pow(10, decimals),
+        decimals,
+        assetType: coin.assetType,
+        assetTypeV2: coin.assetTypeV2,
+        iconUri: coin.metadata?.iconUri,
+        isFrozen: coin.isFrozen,
+        isPrimary: coin.isPrimary,
+      };
+    });
   } catch (error) {
     return [];
   }
@@ -250,16 +266,23 @@ export async function getTransactionHistory(
       limit,
     });
 
-    return transactions.map((tx: any) => ({
-      hash: tx.transaction_version?.toString() || tx.hash || "Unknown",
-      success: tx.user_transaction?.success ?? true,
-      type: tx.user_transaction?.payload?.type || "Unknown",
-      timestamp: tx.user_transaction?.timestamp
-        ? new Date(parseInt(tx.user_transaction.timestamp) / 1000).toLocaleString()
-        : "Unknown",
-      version: tx.transaction_version?.toString() || "Unknown",
-      gasUsed: Number(tx.user_transaction?.gas_used) || 0,
-    }));
+    return transactions.map((tx: AccountTransaction) => {
+      // Get timestamp and success from fungibleAssetActivities if available
+      const activity = tx.fungibleAssetActivities[0];
+      const timestamp = activity?.transactionTimestamp
+        ? new Date(parseInt(activity.transactionTimestamp) / 1000).toLocaleString()
+        : "Unknown";
+      const success = activity?.isTransactionSuccess ?? true;
+
+      return {
+        hash: tx.transactionVersion,
+        success,
+        type: tx.userTransaction?.entryFunction || "Unknown",
+        timestamp,
+        version: tx.transactionVersion,
+        gasUsed: 0, // Not available in AccountTransaction type
+      };
+    });
   } catch (error) {
     return [];
   }
@@ -331,6 +354,7 @@ export function signMessage(privateKeyHex: string, message: string): SignatureRe
 
   return {
     signature: signature.toString(),
+    address: account.accountAddress.toString(),
     publicKey: account.publicKey.toString(),
   };
 }

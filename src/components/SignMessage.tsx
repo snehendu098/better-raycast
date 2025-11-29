@@ -26,7 +26,12 @@ export default function SignMessage({ privateKey }: SignMessageProps) {
       const result = signMessage(privateKey, values.message.trim());
 
       push(
-        <SignatureResult message={values.message.trim()} signature={result.signature} publicKey={result.publicKey} />,
+        <SignatureResult
+          message={values.message.trim()}
+          signature={result.signature}
+          address={result.address}
+          publicKey={result.publicKey}
+        />,
       );
     } catch (error) {
       await showToast({
@@ -59,8 +64,25 @@ export default function SignMessage({ privateKey }: SignMessageProps) {
   );
 }
 
-function SignatureResult({ message, signature, publicKey }: { message: string; signature: string; publicKey: string }) {
+function SignatureResult({
+  message,
+  signature,
+  address,
+  publicKey,
+}: {
+  message: string;
+  signature: string;
+  address: string;
+  publicKey: string;
+}) {
   const markdown = `# Signature Result
+
+**Account Address:**
+\`\`\`
+${address}
+\`\`\`
+
+---
 
 **Message:**
 \`\`\`
@@ -88,6 +110,7 @@ ${publicKey}
       navigationTitle="Signature Result"
       actions={
         <ActionPanel>
+          <Action.CopyToClipboard title="Copy Address" content={address} />
           <Action.CopyToClipboard title="Copy Signature" content={signature} />
           <Action.CopyToClipboard title="Copy Public Key" content={publicKey} />
           <Action.CopyToClipboard title="Copy Message" content={message} />

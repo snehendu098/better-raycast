@@ -1,21 +1,27 @@
-import { List, ActionPanel, Action, Icon } from "@raycast/api";
+import { List, ActionPanel, Action, Icon, Color } from "@raycast/api";
 import { useCallback } from "react";
-import { getAllBalances } from "../utils/aptos";
+import { getAllBalances, getExplorerUrl } from "../utils/aptos";
 import { useFetch } from "../hooks";
 import { NetworkType, CoinBalance } from "../types";
-import { BALANCE_DECIMALS } from "../constants";
 
 interface AllBalancesProps {
   address: string;
   network: NetworkType;
 }
 
-function formatCoinType(coinType: string): string {
-  const parts = coinType.split("::");
-  if (parts.length >= 3) {
-    return parts[parts.length - 1];
+const APT_ASSET_TYPE = "0x1::aptos_coin::AptosCoin";
+
+function getAssetExplorerUrl(coin: CoinBalance, network: NetworkType): string {
+  // APT coin uses account explorer type
+  if (coin.assetType === APT_ASSET_TYPE) {
+    return getExplorerUrl("account", "0x1", network);
   }
-  return coinType.length > 30 ? `${coinType.slice(0, 30)}...` : coinType;
+  // Other fungible assets use fungible_asset type with assetTypeV2 address
+  if (coin.assetTypeV2) {
+    return getExplorerUrl("fungible_asset", coin.assetTypeV2, network);
+  }
+  // Fallback to account view with assetType
+  return getExplorerUrl("account", coin.assetType, network);
 }
 
 export default function AllBalances({ address, network }: AllBalancesProps) {
@@ -26,8 +32,6 @@ export default function AllBalances({ address, network }: AllBalancesProps) {
     deps: [address, network],
   });
 
-  console.log(balances);
-
   return (
     <List isLoading={isLoading} navigationTitle="All Balances">
       {(!balances || balances.length === 0) && !isLoading ? (
@@ -35,15 +39,25 @@ export default function AllBalances({ address, network }: AllBalancesProps) {
       ) : (
         balances?.map((coin, index) => (
           <List.Item
-            key={`${coin.coinType}-${index}`}
-            icon={Icon.Coins}
-            title={formatCoinType(coin.coinType)}
-            subtitle={coin.coinType}
-            accessories={[{ text: `${coin.amount.toFixed(BALANCE_DECIMALS)}` }]}
+            key={`${coin.assetType}-${index}`}
+            icon={coin.iconUri ? { source: coin.iconUri } : Icon.Coins}
+            title={coin.symbol}
+            subtitle={coin.name}
+            accessories={[
+              ...(coin.isFrozen
+                ? [{ tag: { value: "Frozen", color: Color.Red } }]
+                : []),
+              ...(coin.isPrimary
+                ? [{ tag: { value: "Primary", color: Color.Blue } }]
+                : []),
+              { text: `${coin.amount.toFixed(Math.min(coin.decimals, 8))}` },
+            ]}
             actions={
               <ActionPanel>
-                <Action.CopyToClipboard title="Copy Coin Type" content={coin.coinType} />
+                <Action.OpenInBrowser title="View in Explorer" url={getAssetExplorerUrl(coin, network)} />
+                <Action.CopyToClipboard title="Copy Asset Type" content={coin.assetType} />
                 <Action.CopyToClipboard title="Copy Balance" content={coin.amount.toString()} />
+                <Action.CopyToClipboard title="Copy Symbol" content={coin.symbol} />
               </ActionPanel>
             }
           />

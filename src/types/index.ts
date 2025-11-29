@@ -13,8 +13,15 @@ export interface TransactionInfo {
 
 // Balance types
 export interface CoinBalance {
-  coinType: string;
+  symbol: string;
+  name: string;
   amount: number;
+  decimals: number;
+  assetType: string;
+  assetTypeV2?: string | null;
+  iconUri?: string | null;
+  isFrozen: boolean;
+  isPrimary: boolean;
 }
 
 // NFT types
@@ -38,6 +45,7 @@ export interface StakingInfo {
 // Signature types
 export interface SignatureResult {
   signature: string;
+  address: string;
   publicKey: string;
 }
 

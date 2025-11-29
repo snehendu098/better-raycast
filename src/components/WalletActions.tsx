@@ -72,7 +72,7 @@ export default function WalletActions({
       <List.Item
         icon={Icon.Person}
         title="Account Details"
-        subtitle="View balance, staking, ANS name"
+        subtitle="View account details of your address"
         actions={
           <ActionPanel>
             <Action.Push
@@ -133,8 +133,8 @@ export default function WalletActions({
       />
       <List.Item
         icon={Icon.Eye}
-        title="Check Any Address"
-        subtitle="Look up any Aptos address"
+        title="Account Lookup with address or ANS"
+        subtitle="View account details of any arbitary account or ans"
         actions={
           <ActionPanel>
             <Action.Push title="Check Address" icon={Icon.Eye} target={<CheckAddress network={network} />} />

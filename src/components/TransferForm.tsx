@@ -276,9 +276,9 @@ function TransferSuccess({
 
   return (
     <Detail
-      markdown={`# ✅ Transfer Successful!
+      markdown={`# Transfer Successful!
 
-**Network:** ${network === "mainnet" ? "🔴 Mainnet" : "🟢 Testnet"}
+**Network:** ${network === "mainnet" ? "Mainnet" : "Testnet"}
 
 **Amount:** ${amount} APT
 

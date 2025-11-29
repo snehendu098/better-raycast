@@ -1,12 +1,16 @@
 import { Form, ActionPanel, Action, Icon, showToast, Toast, useNavigation } from "@raycast/api";
 import { useState } from "react";
-import { accountExists } from "../utils/aptos";
+import { accountExists, getAddressFromName } from "../utils/aptos";
 import { NetworkType } from "../types";
 import { MIN_ADDRESS_LENGTH, ADDRESS_PREFIX } from "../constants";
 import AccountDetails from "./AccountDetails";
 
 interface CheckAddressProps {
   network: NetworkType;
+}
+
+function isAnsName(input: string): boolean {
+  return input.endsWith(".apt") || (!input.startsWith("0x") && !input.includes("0x"));
 }
 
 export default function CheckAddress({ network }: CheckAddressProps) {
@@ -17,26 +21,52 @@ export default function CheckAddress({ network }: CheckAddressProps) {
     if (!values.address || values.address.trim() === "") {
       await showToast({
         style: Toast.Style.Failure,
-        title: "Invalid Address",
-        message: "Please enter an address to check",
+        title: "Invalid Input",
+        message: "Please enter an address or ANS name",
       });
       return;
     }
 
-    const address = values.address.trim();
-
-    if (!address.startsWith(ADDRESS_PREFIX) || address.length < MIN_ADDRESS_LENGTH) {
-      await showToast({
-        style: Toast.Style.Failure,
-        title: "Invalid Address",
-        message: "Please enter a valid Aptos address (0x...)",
-      });
-      return;
-    }
-
+    const input = values.address.trim();
     setIsLoading(true);
 
     try {
+      let address: string;
+
+      // Check if input is an ANS name
+      if (isAnsName(input)) {
+        const resolvedAddress = await getAddressFromName(input, network);
+
+        if (!resolvedAddress) {
+          await showToast({
+            style: Toast.Style.Failure,
+            title: "ANS Name Not Found",
+            message: `Could not resolve "${input}" to an address`,
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        address = resolvedAddress;
+        await showToast({
+          style: Toast.Style.Success,
+          title: "ANS Name Resolved",
+          message: `${input} → ${address.slice(0, 10)}...`,
+        });
+      } else {
+        // Validate address format
+        if (!input.startsWith(ADDRESS_PREFIX) || input.length < MIN_ADDRESS_LENGTH) {
+          await showToast({
+            style: Toast.Style.Failure,
+            title: "Invalid Address",
+            message: "Please enter a valid Aptos address (0x...) or ANS name",
+          });
+          setIsLoading(false);
+          return;
+        }
+        address = input;
+      }
+
       const exists = await accountExists(address, network);
 
       if (!exists) {
@@ -73,9 +103,9 @@ export default function CheckAddress({ network }: CheckAddressProps) {
     >
       <Form.TextField
         id="address"
-        title="Address"
-        placeholder="0x..."
-        info="Enter any Aptos address to view its details"
+        title="Address or ANS Name"
+        placeholder="0x... or name.apt"
+        info="Enter an Aptos address or ANS name (e.g., kent.apt) to view its details"
       />
       <Form.Description title="Network" text={network} />
     </Form>

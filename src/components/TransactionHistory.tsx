@@ -24,14 +24,16 @@ export default function TransactionHistory({ address, network }: TransactionHist
       ) : (
         transactions?.map((tx) => (
           <List.Item
-            key={tx.hash}
+            key={tx.version}
             icon={{
               source: tx.success ? Icon.CheckCircle : Icon.XMarkCircle,
               tintColor: tx.success ? Color.Green : Color.Red,
             }}
-            title={formatAddress(tx.hash)}
-            subtitle={tx.timestamp}
+            title={tx.type !== "Unknown" ? tx.type.split("::").pop() || tx.type : `Version ${tx.version}`}
             accessories={[
+              {
+                text: `v${tx.version}`,
+              },
               {
                 tag: {
                   value: tx.success ? "Success" : "Failed",
@@ -41,8 +43,8 @@ export default function TransactionHistory({ address, network }: TransactionHist
             ]}
             actions={
               <ActionPanel>
-                <Action.OpenInBrowser title="Open in Explorer" url={getExplorerUrl("txn", tx.hash, network)} />
-                <Action.CopyToClipboard title="Copy Hash" content={tx.hash} />
+                <Action.OpenInBrowser title="Open in Explorer" url={getExplorerUrl("txn", tx.version, network)} />
+                <Action.CopyToClipboard title="Copy Version" content={tx.version} />
               </ActionPanel>
             }
           />
