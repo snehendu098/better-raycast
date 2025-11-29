@@ -18,7 +18,7 @@ export async function createAriesProfile(
     const transaction = await client.buildTransaction({
       data: {
         function: "0x9770fa9c725cbd97eb50b2be5f7416efdfd1f1554beb0750d4dae4c64e860da3::controller::register_user",
-        functionArguments: [],
+        functionArguments: ["Main Account"],
       },
       sender: account.accountAddress,
     });
