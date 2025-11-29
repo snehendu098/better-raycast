@@ -7,7 +7,6 @@ export async function unstakeTokens(privateKeyHex: string, amount: number): Prom
     const account = getAccountFromPrivateKey(privateKeyHex);
     const client = getClientWithAccount(Network.MAINNET, account);
 
-    // Convert APT to OCTAs (smallest unit)
     const amountInOctas = BigInt(Math.floor(amount * OCTAS_PER_APT));
 
     const transaction = await client.buildTransaction({
@@ -21,6 +20,16 @@ export async function unstakeTokens(privateKeyHex: string, amount: number): Prom
     const transactionResponse = await client.signAndSubmitTransaction({
       transaction,
     });
+
+    // Wait for transaction confirmation
+    const confirmedTransaction = await client.waitForTransaction({
+      hash: transactionResponse.hash,
+    });
+
+    // Validate transaction success
+    if (!confirmedTransaction.success) {
+      throw new Error(`Transaction failed: ${confirmedTransaction.vm_status}`);
+    }
 
     return transactionResponse.hash;
   } catch (error: any) {

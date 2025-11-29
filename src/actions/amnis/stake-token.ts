@@ -22,6 +22,16 @@ export async function stakeTokens(privateKeyHex: string, amount: number): Promis
       transaction,
     });
 
+    // Wait for transaction confirmation
+    const confirmedTransaction = await client.waitForTransaction({
+      hash: transactionResponse.hash,
+    });
+
+    // Validate transaction success
+    if (!confirmedTransaction.success) {
+      throw new Error(`Transaction failed: ${confirmedTransaction.vm_status}`);
+    }
+
     return transactionResponse.hash;
   } catch (error: any) {
     throw new Error(`Token staking failed: ${error.message}`);
