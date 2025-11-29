@@ -8,6 +8,7 @@ import {
   EmptyWalletView,
   AmnisOperations,
   LiquidswapOperations,
+  AeriesOperations,
 } from "./components";
 
 export default function Command() {
@@ -62,6 +63,13 @@ export default function Command() {
         onNetworkChange={handleNetworkChange}
       />
       <AmnisOperations
+        network={network}
+        privateKey={privateKey}
+        address={address || ""}
+        onNetworkChange={handleNetworkChange}
+        onOperationComplete={refreshBalance}
+      />
+      <AeriesOperations
         network={network}
         privateKey={privateKey}
         address={address || ""}

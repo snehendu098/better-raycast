@@ -33,3 +33,11 @@ export { default as AmnisOperations } from "./amnis/AmnisOperations";
 // Liquidswap components
 export { default as LiquidswapSwapForm } from "./liquidswap/LiquidswapSwapForm";
 export { default as LiquidswapOperations } from "./liquidswap/LiquidswapOperations";
+
+// Aeries components
+export { default as AeriesOperations } from "./aeries/AeriesOperations";
+export { default as AeriesLendForm } from "./aeries/AeriesLendForm";
+export { default as AeriesBorrowForm } from "./aeries/AeriesBorrowForm";
+export { default as AeriesRepayForm } from "./aeries/AeriesRepayForm";
+export { default as AeriesWithdrawForm } from "./aeries/AeriesWithdrawForm";
+export { default as AeriesProfileForm } from "./aeries/AeriesProfileForm";
