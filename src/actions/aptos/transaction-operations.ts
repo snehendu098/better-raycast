@@ -1,23 +1,7 @@
-import {
-  AccountTransaction,
-  AptosJSProClient,
-} from "@aptos-labs/js-pro";
-import {
-  TransactionInfo,
-  CoinBalance,
-  TransferResult,
-  SimulationResult,
-  NetworkType,
-} from "../../types";
-import {
-  OCTAS_PER_APT,
-  DEFAULT_TX_LIMIT,
-} from "../../constants";
-import {
-  getClient,
-  getClientWithAccount,
-  getAccountFromPrivateKey,
-} from "../../utils/aptos";
+import { AccountTransaction, AptosJSProClient } from "@aptos-labs/js-pro";
+import { TransactionInfo, CoinBalance, TransferResult, SimulationResult, NetworkType } from "../../types";
+import { OCTAS_PER_APT, DEFAULT_TX_LIMIT } from "../../constants";
+import { getClient, getClientWithAccount, getAccountFromPrivateKey } from "../../utils/aptos";
 
 // Get APT balance for an address, returns balance in APT (not octas)
 export async function getBalance(address: string, network: NetworkType): Promise<number> {
@@ -40,7 +24,7 @@ export async function getAllBalances(address: string, network: NetworkType): Pro
     const client = getClient(network);
     const { balances } = await client.fetchAccountCoins({ address });
 
-    console.log(balances);
+    console.log(balances[1].metadata);
 
     return balances.map((coin: any) => {
       const decimals = coin.metadata?.decimals ?? 8;

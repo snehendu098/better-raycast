@@ -7,6 +7,7 @@ import {
   WalletSettings,
   EmptyWalletView,
   AmnisOperations,
+  LiquidswapOperations,
 } from "./components";
 
 export default function Command() {
@@ -61,6 +62,13 @@ export default function Command() {
         onNetworkChange={handleNetworkChange}
       />
       <AmnisOperations
+        network={network}
+        privateKey={privateKey}
+        address={address || ""}
+        onNetworkChange={handleNetworkChange}
+        onOperationComplete={refreshBalance}
+      />
+      <LiquidswapOperations
         network={network}
         privateKey={privateKey}
         address={address || ""}

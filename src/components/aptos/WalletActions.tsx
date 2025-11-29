@@ -11,6 +11,8 @@ import NFTGallery from "./NFTGallery";
 import SignMessage from "./SignMessage";
 import ANSLookup from "./ANSLookup";
 import CheckAddress from "./CheckAddress";
+import TokenDataLookup from "./TokenDataLookup";
+import FungibleAssetMetadataLookup from "./FungibleAssetMetadataLookup";
 
 interface WalletActionsProps {
   privateKey: string;
@@ -139,6 +141,34 @@ export default function WalletActions({
         actions={
           <ActionPanel>
             <Action.Push title="Check Address" icon={Icon.Eye} target={<CheckAddress network={network} />} />
+          </ActionPanel>
+        }
+      />
+      <List.Item
+        icon={Icon.Eye}
+        title="Token Data Lookup"
+        subtitle="View complete NFT token data"
+        actions={
+          <ActionPanel>
+            <Action.Push
+              title="Token Data Lookup"
+              icon={Icon.Eye}
+              target={<TokenDataLookup network={network} onNetworkChange={onNetworkChange} />}
+            />
+          </ActionPanel>
+        }
+      />
+      <List.Item
+        icon={Icon.Eye}
+        title="Fungible Asset Metadata"
+        subtitle="View fungible asset or coin metadata"
+        actions={
+          <ActionPanel>
+            <Action.Push
+              title="Fungible Asset Metadata"
+              icon={Icon.Eye}
+              target={<FungibleAssetMetadataLookup network={network} onNetworkChange={onNetworkChange} />}
+            />
           </ActionPanel>
         }
       />
