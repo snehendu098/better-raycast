@@ -13,14 +13,16 @@ import {
 import { useState } from "react";
 import {
   transferAPT,
-  formatAddress,
-  getExplorerUrl,
   getAddressFromName,
   getBalance,
+} from "../../actions/aptos";
+import {
+  formatAddress,
+  getExplorerUrl,
   setSelectedNetwork,
-} from "../utils/aptos";
-import { NetworkType } from "../types";
-import { MIN_ADDRESS_LENGTH, BALANCE_DISPLAY_DECIMALS, ADDRESS_PREFIX } from "../constants";
+} from "../../utils/aptos";
+import { NetworkType } from "../../types";
+import { MIN_ADDRESS_LENGTH, BALANCE_DISPLAY_DECIMALS, ADDRESS_PREFIX } from "../../constants";
 
 /**
  * Check if input is an ANS name (ends with .apt)

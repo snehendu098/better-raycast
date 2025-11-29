@@ -1,7 +1,8 @@
 import { Form, ActionPanel, Action, Icon, showToast, Toast, Detail, useNavigation } from "@raycast/api";
 import { useState } from "react";
-import { getAddressFromName, getNameFromAddress, getExplorerUrl } from "../utils/aptos";
-import { NetworkType } from "../types";
+import { getAddressFromName, getNameFromAddress } from "../../actions/aptos";
+import { getExplorerUrl } from "../../utils/aptos";
+import { NetworkType } from "../../types";
 
 interface ANSLookupProps {
   network: NetworkType;

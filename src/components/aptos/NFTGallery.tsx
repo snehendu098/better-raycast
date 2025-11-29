@@ -1,8 +1,8 @@
 import { List, ActionPanel, Action, Icon } from "@raycast/api";
 import { useCallback } from "react";
-import { getOwnedNFTs } from "../utils/aptos";
-import { useFetch } from "../hooks";
-import { NetworkType, NFTInfo } from "../types";
+import { getOwnedNFTs } from "../../actions/aptos";
+import { useFetch } from "../../hooks";
+import { NetworkType, NFTInfo } from "../../types";
 
 interface NFTGalleryProps {
   address: string;

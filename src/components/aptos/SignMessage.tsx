@@ -1,6 +1,6 @@
 import { Form, ActionPanel, Action, Icon, showToast, Toast, Detail, useNavigation } from "@raycast/api";
 import { useState } from "react";
-import { signMessage } from "../utils/aptos";
+import { signMessage } from "../../actions/aptos";
 
 interface SignMessageProps {
   privateKey: string;

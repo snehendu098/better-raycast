@@ -1,7 +1,7 @@
 import { List, ActionPanel, Action, Icon } from "@raycast/api";
-import { formatAddress, getExplorerUrl } from "../utils/aptos";
-import { NetworkType } from "../types";
-import { BALANCE_DISPLAY_DECIMALS } from "../constants";
+import { getExplorerUrl, formatAddress } from "../../utils/aptos";
+import { NetworkType } from "../../types";
+import { BALANCE_DISPLAY_DECIMALS } from "../../constants";
 
 interface WalletInfoProps {
   address: string;

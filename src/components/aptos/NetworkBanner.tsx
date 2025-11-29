@@ -1,5 +1,5 @@
 import { List, ActionPanel, Action, Icon, Color } from "@raycast/api";
-import { NetworkType } from "../types";
+import { NetworkType } from "../../types";
 import NetworkSwitcher from "./NetworkSwitcher";
 
 interface NetworkBannerProps {

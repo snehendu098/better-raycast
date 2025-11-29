@@ -1,5 +1,5 @@
 import { ActionPanel, Action, List, Icon, Color, showToast, Toast, useNavigation } from "@raycast/api";
-import { NetworkType, setSelectedNetwork } from "../utils/aptos";
+import { NetworkType, setSelectedNetwork } from "../../utils/aptos";
 
 interface NetworkSwitcherProps {
   currentNetwork: NetworkType;

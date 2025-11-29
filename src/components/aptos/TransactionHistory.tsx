@@ -1,8 +1,9 @@
 import { List, ActionPanel, Action, Icon, Color } from "@raycast/api";
 import { useCallback } from "react";
-import { getTransactionHistory, formatAddress, getExplorerUrl } from "../utils/aptos";
-import { useFetch } from "../hooks";
-import { NetworkType, TransactionInfo } from "../types";
+import { getTransactionHistory } from "../../actions/aptos";
+import { formatAddress, getExplorerUrl } from "../../utils/aptos";
+import { useFetch } from "../../hooks";
+import { NetworkType, TransactionInfo } from "../../types";
 
 interface TransactionHistoryProps {
   address: string;

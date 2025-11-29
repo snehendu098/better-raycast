@@ -1,7 +1,8 @@
 import { List, ActionPanel, Action, Icon } from "@raycast/api";
-import { getExplorerUrl } from "../utils/aptos";
-import { NetworkType } from "../types";
-import { FAUCET_URL } from "../constants";
+import { getExplorerUrl } from "../../utils/aptos";
+import { NetworkType } from "../../types";
+
+import { FAUCET_URL } from "../../constants";
 import TransferForm from "./TransferForm";
 import TransactionHistory from "./TransactionHistory";
 import AccountDetails from "./AccountDetails";

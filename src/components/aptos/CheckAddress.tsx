@@ -1,8 +1,8 @@
 import { Form, ActionPanel, Action, Icon, showToast, Toast, useNavigation } from "@raycast/api";
 import { useState } from "react";
-import { accountExists, getAddressFromName } from "../utils/aptos";
-import { NetworkType } from "../types";
-import { MIN_ADDRESS_LENGTH, ADDRESS_PREFIX } from "../constants";
+import { accountExists, getAddressFromName } from "../../actions/aptos";
+import { NetworkType } from "../../types";
+import { MIN_ADDRESS_LENGTH, ADDRESS_PREFIX } from "../../constants";
 import AccountDetails from "./AccountDetails";
 
 interface CheckAddressProps {

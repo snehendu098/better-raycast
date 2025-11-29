@@ -6,6 +6,7 @@ import {
   WalletActions,
   WalletSettings,
   EmptyWalletView,
+  AmnisOperations,
 } from "./components";
 
 export default function Command() {
@@ -58,6 +59,13 @@ export default function Command() {
         network={network}
         onTransferComplete={refreshBalance}
         onNetworkChange={handleNetworkChange}
+      />
+      <AmnisOperations
+        network={network}
+        privateKey={privateKey}
+        address={address || ""}
+        onNetworkChange={handleNetworkChange}
+        onOperationComplete={refreshBalance}
       />
     </List>
   );

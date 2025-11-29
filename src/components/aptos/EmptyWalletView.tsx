@@ -1,5 +1,5 @@
 import { List, ActionPanel, Action, Icon } from "@raycast/api";
-import { NetworkType } from "../types";
+import { NetworkType } from "../../types";
 import SetupWallet from "./SetupWallet";
 import GenerateWallet from "./GenerateWallet";
 import NetworkSwitcher from "./NetworkSwitcher";

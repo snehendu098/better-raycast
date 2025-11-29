@@ -7,12 +7,14 @@ import {
   getStakingInfo,
   getAllBalances,
   getTransactionHistory,
+} from "../../actions/aptos";
+import {
   getExplorerUrl,
   formatAddress,
-} from "../utils/aptos";
-import { useFetch } from "../hooks";
-import { NetworkType, CoinBalance, TransactionInfo } from "../types";
-import { BALANCE_DECIMALS } from "../constants";
+} from "../../utils/aptos";
+import { useFetch } from "../../hooks";
+import { NetworkType, CoinBalance, TransactionInfo } from "../../types";
+import { BALANCE_DECIMALS } from "../../constants";
 
 interface AccountDetailsProps {
   address: string;

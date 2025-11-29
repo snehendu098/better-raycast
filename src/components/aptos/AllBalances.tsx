@@ -1,8 +1,9 @@
 import { List, ActionPanel, Action, Icon, Color } from "@raycast/api";
 import { useCallback } from "react";
-import { getAllBalances, getExplorerUrl } from "../utils/aptos";
-import { useFetch } from "../hooks";
-import { NetworkType, CoinBalance } from "../types";
+import { getAllBalances } from "../../actions/aptos";
+import { getExplorerUrl } from "../../utils/aptos";
+import { useFetch } from "../../hooks";
+import { NetworkType, CoinBalance } from "../../types";
 
 interface AllBalancesProps {
   address: string;

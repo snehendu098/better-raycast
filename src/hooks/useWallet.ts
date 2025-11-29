@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { LocalStorage, showToast, Toast, confirmAlert, Alert } from "@raycast/api";
-import { getAccountFromPrivateKey, getBalance, getSelectedNetwork } from "../utils/aptos";
+import { getBalance } from "../actions/aptos";
+import { getAccountFromPrivateKey, getSelectedNetwork } from "../utils/aptos";
 import { NetworkType } from "../types";
 
 interface UseWalletResult {
