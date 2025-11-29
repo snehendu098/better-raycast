@@ -2,6 +2,7 @@ import { AccountTransaction, AptosJSProClient } from "@aptos-labs/js-pro";
 import { TransactionInfo, CoinBalance, TransferResult, SimulationResult, NetworkType } from "../../types";
 import { OCTAS_PER_APT, DEFAULT_TX_LIMIT } from "../../constants";
 import { getClient, getClientWithAccount, getAccountFromPrivateKey } from "../../utils/aptos";
+import { getTokenLogoUrl } from "../../utils/token-metadata";
 
 // Get APT balance for an address, returns balance in APT (not octas)
 export async function getBalance(address: string, network: NetworkType): Promise<number> {
@@ -26,20 +27,36 @@ export async function getAllBalances(address: string, network: NetworkType): Pro
 
     console.log(balances[1].metadata);
 
-    return balances.map((coin: any) => {
-      const decimals = coin.metadata?.decimals ?? 8;
-      return {
-        symbol: coin.metadata?.symbol || "Unknown",
-        name: coin.metadata?.name || "Unknown",
-        amount: Number(coin.amount) / Math.pow(10, decimals),
-        decimals,
-        assetType: coin.assetType,
-        assetTypeV2: coin.assetTypeV2,
-        iconUri: coin.metadata?.iconUri,
-        isFrozen: coin.isFrozen,
-        isPrimary: coin.isPrimary,
-      };
-    });
+    return await Promise.all(
+      balances.map(async (coin: any) => {
+        const decimals = coin.metadata?.decimals ?? 8;
+        let iconUri = coin.metadata?.iconUri;
+
+        // Try to get logo from Panoraswap if iconUri is not available
+        if (!iconUri) {
+          // Try to match by faAddress (fungible asset address)
+          if (coin.assetTypeV2) {
+            iconUri = await getTokenLogoUrl(coin.assetTypeV2);
+          }
+          // Fallback to assetType if faAddress didn't work
+          if (!iconUri && coin.assetType) {
+            iconUri = await getTokenLogoUrl(coin.assetType);
+          }
+        }
+
+        return {
+          symbol: coin.metadata?.symbol || "Unknown",
+          name: coin.metadata?.name || "Unknown",
+          amount: Number(coin.amount) / Math.pow(10, decimals),
+          decimals,
+          assetType: coin.assetType,
+          assetTypeV2: coin.assetTypeV2,
+          iconUri,
+          isFrozen: coin.isFrozen,
+          isPrimary: coin.isPrimary,
+        };
+      }),
+    );
   } catch (error) {
     return [];
   }
