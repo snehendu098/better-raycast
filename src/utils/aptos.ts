@@ -1,12 +1,9 @@
 import {
-  Aptos,
-  AptosConfig,
-  Network,
-  Account,
-  Ed25519PrivateKey,
-  PrivateKey,
-  PrivateKeyVariants,
-} from "@aptos-labs/ts-sdk";
+  AptosJSProClient,
+  convertAptosAccountToAccountInfo,
+  convertAptosAccountToSigner,
+} from "@aptos-labs/js-pro";
+import { Account, Ed25519PrivateKey, PrivateKey, PrivateKeyVariants, Network } from "@aptos-labs/ts-sdk";
 import { LocalStorage } from "@raycast/api";
 import {
   NetworkType,
@@ -34,21 +31,6 @@ export type { NetworkType } from "../types";
 // ============ NETWORK HELPERS ============
 
 /**
- * Get the currently selected network from LocalStorage
- */
-export async function getSelectedNetwork(): Promise<NetworkType> {
-  const network = await LocalStorage.getItem<string>("network");
-  return (network as NetworkType) || DEFAULT_NETWORK;
-}
-
-/**
- * Set the selected network in LocalStorage
- */
-export async function setSelectedNetwork(network: NetworkType): Promise<void> {
-  await LocalStorage.setItem("network", network);
-}
-
-/**
  * Convert our NetworkType to Aptos SDK Network enum
  */
 function getAptosNetwork(network: NetworkType): Network {
@@ -63,15 +45,43 @@ function getAptosNetwork(network: NetworkType): Network {
   }
 }
 
+/**
+ * Get the currently selected network from LocalStorage
+ */
+export async function getSelectedNetwork(): Promise<NetworkType> {
+  const network = await LocalStorage.getItem<string>("network");
+  return (network as NetworkType) || DEFAULT_NETWORK;
+}
+
+/**
+ * Set the selected network in LocalStorage
+ */
+export async function setSelectedNetwork(network: NetworkType): Promise<void> {
+  await LocalStorage.setItem("network", network);
+}
+
 // ============ CLIENT HELPERS ============
 
 /**
- * Get basic Aptos client (for simple operations)
+ * Get AptosJSProClient for the specified network (read-only operations)
  */
-export function getAptosClient(network: NetworkType): Aptos {
+export function getClient(network: NetworkType): AptosJSProClient {
   const aptosNetwork = getAptosNetwork(network);
-  const config = new AptosConfig({ network: aptosNetwork });
-  return new Aptos(config);
+  return new AptosJSProClient({
+    network: { network: aptosNetwork as Network.MAINNET | Network.TESTNET | Network.DEVNET },
+  });
+}
+
+/**
+ * Get AptosJSProClient with account and signer for transactions
+ */
+export function getClientWithAccount(network: NetworkType, account: Account): AptosJSProClient {
+  const aptosNetwork = getAptosNetwork(network);
+  return new AptosJSProClient({
+    network: { network: aptosNetwork as Network.MAINNET | Network.TESTNET | Network.DEVNET },
+    account: convertAptosAccountToAccountInfo(account),
+    signer: convertAptosAccountToSigner(account),
+  });
 }
 
 /**
@@ -108,11 +118,9 @@ export function formatAddress(address: string): string {
  */
 export async function getBalance(address: string, network: NetworkType): Promise<number> {
   try {
-    const aptos = getAptosClient(network);
-    const balance = await aptos.getAccountAPTAmount({
-      accountAddress: address,
-    });
-    return balance / OCTAS_PER_APT;
+    const client = getClient(network);
+    const balance = await client.fetchAptBalance({ address });
+    return Number(balance) / OCTAS_PER_APT;
   } catch (error) {
     // Account might not exist yet (no balance)
     return 0;
@@ -124,15 +132,11 @@ export async function getBalance(address: string, network: NetworkType): Promise
  */
 export async function getAllBalances(address: string, network: NetworkType): Promise<CoinBalance[]> {
   try {
-    const aptos = getAptosClient(network);
-    const coins = await aptos.getAccountCoinsData({
-      accountAddress: address,
-    });
+    const client = getClient(network);
+    const { balances } = await client.fetchAccountCoins({ address });
 
-    console.log(coins);
-
-    return coins.map((coin: any) => ({
-      coinType: coin.asset_type || "Unknown",
+    return balances.map((coin: any) => ({
+      coinType: coin.metadata?.symbol || coin.asset_type || "Unknown",
       amount: Number(coin.amount) / OCTAS_PER_APT,
       ...coin,
     }));
@@ -152,30 +156,19 @@ export async function transferAPT(
   amountInAPT: number,
   network: NetworkType,
 ): Promise<TransferResult> {
-  const aptos = getAptosClient(network);
   const sender = getAccountFromPrivateKey(senderPrivateKey);
+  const client = getClientWithAccount(network, sender);
 
   const amountInOctas = BigInt(Math.floor(amountInAPT * OCTAS_PER_APT));
 
-  // 1. BUILD the transaction
-  const transaction = await aptos.transaction.build.simple({
-    sender: sender.accountAddress,
+  const pendingTx = await client.signAndSubmitTransaction({
     data: {
       function: "0x1::aptos_account::transfer",
       functionArguments: [recipientAddress, amountInOctas],
     },
   });
 
-  // 2. SIGN AND SUBMIT
-  const pendingTx = await aptos.signAndSubmitTransaction({
-    signer: sender,
-    transaction,
-  });
-
-  // 3. WAIT for confirmation
-  const executedTx = await aptos.waitForTransaction({
-    transactionHash: pendingTx.hash,
-  });
+  const executedTx = await client.waitForTransaction({ hash: pendingTx.hash });
 
   return {
     hash: pendingTx.hash,
@@ -193,11 +186,10 @@ export async function transferCoin(
   coinType: string,
   network: NetworkType,
 ): Promise<TransferResult> {
-  const aptos = getAptosClient(network);
   const sender = getAccountFromPrivateKey(senderPrivateKey);
+  const client = getClientWithAccount(network, sender);
 
-  const transaction = await aptos.transaction.build.simple({
-    sender: sender.accountAddress,
+  const pendingTx = await client.signAndSubmitTransaction({
     data: {
       function: "0x1::coin::transfer",
       typeArguments: [coinType],
@@ -205,14 +197,7 @@ export async function transferCoin(
     },
   });
 
-  const pendingTx = await aptos.signAndSubmitTransaction({
-    signer: sender,
-    transaction,
-  });
-
-  const executedTx = await aptos.waitForTransaction({
-    transactionHash: pendingTx.hash,
-  });
+  const executedTx = await client.waitForTransaction({ hash: pendingTx.hash });
 
   return {
     hash: pendingTx.hash,
@@ -229,22 +214,18 @@ export async function simulateTransfer(
   amountInAPT: number,
   network: NetworkType,
 ): Promise<SimulationResult> {
-  const aptos = getAptosClient(network);
   const sender = getAccountFromPrivateKey(senderPrivateKey);
+  const client = getClientWithAccount(network, sender);
   const amountInOctas = BigInt(Math.floor(amountInAPT * OCTAS_PER_APT));
 
-  const transaction = await aptos.transaction.build.simple({
-    sender: sender.accountAddress,
+  const transaction = await client.buildTransaction({
     data: {
       function: "0x1::aptos_account::transfer",
       functionArguments: [recipientAddress, amountInOctas],
     },
   });
 
-  const [simulation] = await aptos.transaction.simulate.simple({
-    signerPublicKey: sender.publicKey,
-    transaction,
-  });
+  const simulation = await client.simulateTransaction({ transaction });
 
   return {
     gasUsed: Number(simulation.gas_used),
@@ -263,19 +244,21 @@ export async function getTransactionHistory(
   limit: number = DEFAULT_TX_LIMIT,
 ): Promise<TransactionInfo[]> {
   try {
-    const aptos = getAptosClient(network);
-    const txns = await aptos.getAccountTransactions({
-      accountAddress: address,
-      options: { limit },
+    const client = getClient(network);
+    const { transactions } = await client.fetchAccountTransactions({
+      address,
+      limit,
     });
 
-    return txns.map((tx: any) => ({
-      hash: tx.hash || "Unknown",
-      success: tx.success ?? true,
-      type: tx.type || "Unknown",
-      timestamp: tx.timestamp ? new Date(parseInt(tx.timestamp) / 1000).toLocaleString() : "Unknown",
-      version: tx.version?.toString() || "Unknown",
-      gasUsed: Number(tx.gas_used) || 0,
+    return transactions.map((tx: any) => ({
+      hash: tx.transaction_version?.toString() || tx.hash || "Unknown",
+      success: tx.user_transaction?.success ?? true,
+      type: tx.user_transaction?.payload?.type || "Unknown",
+      timestamp: tx.user_transaction?.timestamp
+        ? new Date(parseInt(tx.user_transaction.timestamp) / 1000).toLocaleString()
+        : "Unknown",
+      version: tx.transaction_version?.toString() || "Unknown",
+      gasUsed: Number(tx.user_transaction?.gas_used) || 0,
     }));
   } catch (error) {
     return [];
@@ -289,7 +272,8 @@ export async function getTransactionHistory(
  */
 export async function getAccountInfo(address: string, network: NetworkType): Promise<AccountInfo | null> {
   try {
-    const aptos = getAptosClient(network);
+    const client = getClient(network);
+    const { aptos } = client.getClients();
     const info = await aptos.getAccountInfo({ accountAddress: address });
 
     return {
@@ -306,7 +290,8 @@ export async function getAccountInfo(address: string, network: NetworkType): Pro
  */
 export async function accountExists(address: string, network: NetworkType): Promise<boolean> {
   try {
-    const aptos = getAptosClient(network);
+    const client = getClient(network);
+    const { aptos } = client.getClients();
     await aptos.getAccountInfo({ accountAddress: address });
     return true;
   } catch (error) {
@@ -321,10 +306,8 @@ export async function accountExists(address: string, network: NetworkType): Prom
  */
 export async function getOwnedNFTs(address: string, network: NetworkType): Promise<NFTInfo[]> {
   try {
-    const aptos = getAptosClient(network);
-    const tokens = await aptos.getAccountOwnedTokens({
-      accountAddress: address,
-    });
+    const client = getClient(network);
+    const { tokens } = await client.fetchAccountTokens({ address });
 
     return tokens.map((token: any) => ({
       name: token.current_token_data?.token_name || "Unknown",
@@ -359,9 +342,9 @@ export function signMessage(privateKeyHex: string, message: string): SignatureRe
  */
 export async function getNameFromAddress(address: string, network: NetworkType): Promise<string | null> {
   try {
-    const aptos = getAptosClient(network);
-    const name = await aptos.ans.getPrimaryName({ address });
-    return name || null;
+    const client = getClient(network);
+    const name = await client.fetchNameFromAddress({ address });
+    return name?.toString() || null;
   } catch (error) {
     return null;
   }
@@ -372,8 +355,8 @@ export async function getNameFromAddress(address: string, network: NetworkType):
  */
 export async function getAddressFromName(name: string, network: NetworkType): Promise<string | null> {
   try {
-    const aptos = getAptosClient(network);
-    const address = await aptos.ans.getOwnerAddress({ name });
+    const client = getClient(network);
+    const address = await client.fetchAddressFromName({ name });
     return address?.toString() || null;
   } catch (error) {
     return null;
@@ -387,7 +370,8 @@ export async function getAddressFromName(name: string, network: NetworkType): Pr
  */
 export async function getStakingInfo(address: string, network: NetworkType): Promise<StakingInfo | null> {
   try {
-    const aptos = getAptosClient(network);
+    const client = getClient(network);
+    const { aptos } = client.getClients();
     const resources = await aptos.getAccountResources({
       accountAddress: address,
     });
