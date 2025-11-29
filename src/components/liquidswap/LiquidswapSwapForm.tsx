@@ -13,7 +13,13 @@ import {
 import { useState } from "react";
 import { swap } from "../../actions/liquidswap/swap";
 import { formatAddress, getExplorerUrl } from "../../utils/aptos";
-import { COMMON_TOKENS, findTokenBySymbol, getTokenDecimals } from "../../actions/liquidswap/tokens";
+import {
+  COMMON_TOKENS,
+  findTokenBySymbol,
+  getTokenDecimals,
+  isValidMoveStructId,
+  getTokenInfo,
+} from "../../actions/liquidswap/tokens";
 
 interface LiquidswapSwapFormProps {
   privateKey: string;
@@ -29,6 +35,8 @@ export default function LiquidswapSwapForm({
   const { pop, push } = useNavigation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [minCoinOut, setMinCoinOut] = useState<number>(0);
+  const [useCustomFrom, setUseCustomFrom] = useState(false);
+  const [useCustomTo, setUseCustomTo] = useState(false);
 
   /**
    * Calculate minimum output based on slippage tolerance
@@ -47,22 +55,122 @@ export default function LiquidswapSwapForm({
   async function handleSubmit(values: {
     tokenFrom: string;
     tokenTo: string;
+    customFromAddress?: string;
+    customToAddress?: string;
     amount: string;
     slippage: string;
   }) {
-    const { tokenFrom, tokenTo, amount, slippage } = values;
+    const { tokenFrom, tokenTo, customFromAddress, customToAddress, amount, slippage } = values;
 
-    // Validate token selection
-    if (!tokenFrom || !tokenTo) {
-      await showToast({
-        style: Toast.Style.Failure,
-        title: "Invalid Tokens",
-        message: "Please select both source and destination tokens",
-      });
-      return;
+    // Determine source token and move struct ID
+    let sourceMoveStructId: string;
+    let sourceTokenSymbol: string;
+    let sourceDecimals: number;
+
+    if (useCustomFrom) {
+      // Validate custom from address
+      if (!customFromAddress || customFromAddress.trim().length === 0) {
+        await showToast({
+          style: Toast.Style.Failure,
+          title: "Invalid Custom Token",
+          message: "Please enter a custom token address",
+        });
+        return;
+      }
+
+      if (!isValidMoveStructId(customFromAddress)) {
+        await showToast({
+          style: Toast.Style.Failure,
+          title: "Invalid Token Address",
+          message: "Address must be in format: 0x...::module::TokenName",
+        });
+        return;
+      }
+
+      sourceMoveStructId = customFromAddress;
+      const sourceInfo = getTokenInfo(customFromAddress);
+      sourceTokenSymbol = sourceInfo.name;
+      sourceDecimals = sourceInfo.decimals;
+    } else {
+      // Use preset token
+      if (!tokenFrom) {
+        await showToast({
+          style: Toast.Style.Failure,
+          title: "Invalid Token",
+          message: "Please select a source token",
+        });
+        return;
+      }
+
+      const sourceToken = findTokenBySymbol(tokenFrom);
+      if (!sourceToken) {
+        await showToast({
+          style: Toast.Style.Failure,
+          title: "Token Error",
+          message: "Could not find source token information",
+        });
+        return;
+      }
+
+      sourceMoveStructId = sourceToken.moveStructId;
+      sourceTokenSymbol = tokenFrom;
+      sourceDecimals = sourceToken.decimals;
     }
 
-    if (tokenFrom === tokenTo) {
+    // Determine destination token and move struct ID
+    let destMoveStructId: string;
+    let destTokenSymbol: string;
+
+    if (useCustomTo) {
+      // Validate custom to address
+      if (!customToAddress || customToAddress.trim().length === 0) {
+        await showToast({
+          style: Toast.Style.Failure,
+          title: "Invalid Custom Token",
+          message: "Please enter a custom token address",
+        });
+        return;
+      }
+
+      if (!isValidMoveStructId(customToAddress)) {
+        await showToast({
+          style: Toast.Style.Failure,
+          title: "Invalid Token Address",
+          message: "Address must be in format: 0x...::module::TokenName",
+        });
+        return;
+      }
+
+      destMoveStructId = customToAddress;
+      const destInfo = getTokenInfo(customToAddress);
+      destTokenSymbol = destInfo.name;
+    } else {
+      // Use preset token
+      if (!tokenTo) {
+        await showToast({
+          style: Toast.Style.Failure,
+          title: "Invalid Token",
+          message: "Please select a destination token",
+        });
+        return;
+      }
+
+      const destToken = findTokenBySymbol(tokenTo);
+      if (!destToken) {
+        await showToast({
+          style: Toast.Style.Failure,
+          title: "Token Error",
+          message: "Could not find destination token information",
+        });
+        return;
+      }
+
+      destMoveStructId = destToken.moveStructId;
+      destTokenSymbol = tokenTo;
+    }
+
+    // Validate tokens are different
+    if (sourceMoveStructId === destMoveStructId) {
       await showToast({
         style: Toast.Style.Failure,
         title: "Invalid Swap",
@@ -95,21 +203,8 @@ export default function LiquidswapSwapForm({
 
     setIsSubmitting(true);
 
-    const sourceToken = findTokenBySymbol(tokenFrom);
-    const destToken = findTokenBySymbol(tokenTo);
-
-    if (!sourceToken || !destToken) {
-      await showToast({
-        style: Toast.Style.Failure,
-        title: "Token Error",
-        message: "Could not find token information",
-      });
-      setIsSubmitting(false);
-      return;
-    }
-
     // Build confirmation message
-    const confirmMessage = `Swap ${amountNum} ${tokenFrom} for at least ${minCoinOut.toFixed(6)} ${tokenTo}?`;
+    const confirmMessage = `Swap ${amountNum} ${sourceTokenSymbol} for at least ${minCoinOut.toFixed(6)} ${destTokenSymbol}?`;
 
     // Confirm transaction
     const confirmed = await confirmAlert({
@@ -132,11 +227,11 @@ export default function LiquidswapSwapForm({
     try {
       const hash = await swap(
         privateKey,
-        sourceToken.moveStructId,
-        destToken.moveStructId,
+        sourceMoveStructId,
+        destMoveStructId,
         amountNum,
         minCoinOut,
-        sourceToken.decimals,
+        sourceDecimals,
       );
 
       await showToast({
@@ -149,8 +244,8 @@ export default function LiquidswapSwapForm({
       push(
         <SwapSuccess
           amount={amountNum}
-          tokenFrom={tokenFrom}
-          tokenTo={tokenTo}
+          tokenFrom={sourceTokenSymbol}
+          tokenTo={destTokenSymbol}
           minOutput={minCoinOut}
           hash={hash}
           onDone={() => {
@@ -190,21 +285,56 @@ export default function LiquidswapSwapForm({
       <Form.Dropdown
         id="tokenFrom"
         title="Swap From"
-        info="Select the token to swap from"
+        info="Select a token or choose Custom to enter a move struct ID"
+        onChange={(value) => {
+          if (value === "CUSTOM") {
+            setUseCustomFrom(true);
+          } else {
+            setUseCustomFrom(false);
+          }
+        }}
       >
         {COMMON_TOKENS.map((token) => (
           <Form.Dropdown.Item key={token.moveStructId} value={token.symbol} title={`${token.symbol} - ${token.name}`} />
         ))}
+        <Form.Dropdown.Item value="CUSTOM" title="📝 Custom Token Address" />
       </Form.Dropdown>
+
+      {useCustomFrom && (
+        <Form.TextField
+          id="customFromAddress"
+          title="Custom From Address"
+          placeholder="0x1::aptos_coin::AptosCoin"
+          info="Enter the move struct ID (0x...::module::TokenName)"
+        />
+      )}
+
       <Form.Dropdown
         id="tokenTo"
         title="Swap To"
-        info="Select the token to swap to"
+        info="Select a token or choose Custom to enter a move struct ID"
+        onChange={(value) => {
+          if (value === "CUSTOM") {
+            setUseCustomTo(true);
+          } else {
+            setUseCustomTo(false);
+          }
+        }}
       >
         {COMMON_TOKENS.map((token) => (
           <Form.Dropdown.Item key={token.moveStructId} value={token.symbol} title={`${token.symbol} - ${token.name}`} />
         ))}
+        <Form.Dropdown.Item value="CUSTOM" title="📝 Custom Token Address" />
       </Form.Dropdown>
+
+      {useCustomTo && (
+        <Form.TextField
+          id="customToAddress"
+          title="Custom To Address"
+          placeholder="0xf22bede237a07e121b56d91a491eb7bcdfd1f5907926a9e58338f964a01b17fa::asset::USDC"
+          info="Enter the move struct ID (0x...::module::TokenName)"
+        />
+      )}
       <Form.TextField
         id="amount"
         title="Amount"

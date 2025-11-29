@@ -53,3 +53,32 @@ export function getTokenDecimals(moveStructId: string): number {
   const token = findTokenByMoveStructId(moveStructId);
   return token?.decimals ?? 8; // Default to 8 if not found
 }
+
+/**
+ * Validate that a string is a valid Move struct ID format
+ * Valid formats: 0x[address]::module::TokenName
+ */
+export function isValidMoveStructId(id: string): boolean {
+  if (!id || typeof id !== "string") {
+    return false;
+  }
+  // Check if it starts with 0x and contains at least two `::`
+  const pattern = /^0x[a-fA-F0-9]+::[a-zA-Z_][a-zA-Z0-9_]*::[a-zA-Z_][a-zA-Z0-9_]*$/;
+  return pattern.test(id);
+}
+
+/**
+ * Get token info (name, decimals) from a move struct ID
+ * Returns preset token info if found, otherwise returns generic info
+ */
+export function getTokenInfo(moveStructId: string): { name: string; decimals: number } {
+  const token = findTokenByMoveStructId(moveStructId);
+  if (token) {
+    return { name: token.name, decimals: token.decimals };
+  }
+  // For custom tokens, extract the token name from the move struct ID
+  // Format: 0xaddress::module::TokenName
+  const parts = moveStructId.split("::");
+  const tokenName = parts[parts.length - 1] || "Unknown Token";
+  return { name: tokenName, decimals: 8 }; // Default to 8 decimals for custom tokens
+}
