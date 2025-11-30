@@ -1,6 +1,5 @@
 import { Network } from "@aptos-labs/ts-sdk";
 import { getAccountFromPrivateKey, getClientWithAccount } from "../../utils/aptos";
-import { OCTAS_PER_APT } from "../../constants";
 
 /**
  * Swap tokens in Liquidswap
