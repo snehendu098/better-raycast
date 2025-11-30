@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Better** is a Raycast extension that provides a comprehensive interface for interacting with the Aptos blockchain. It enables users to manage wallets, perform transactions, stake tokens, swap tokens via Liquidswap DEX, and query NFT/fungible asset data.
+**Better** is a Raycast extension that provides a comprehensive interface for interacting with the Aptos blockchain. It enables users to manage wallets, perform transactions, stake tokens, swap tokens via Liquidswap DEX, lend/borrow assets via Aeries lending protocol, and query NFT/fungible asset data.
 
 **Tech Stack:**
 - Raycast API for CLI/command interface
@@ -42,11 +42,13 @@ src/
 ├── actions/                   # Pure functions that interact with Aptos blockchain
 │   ├── aptos/                # Core Aptos operations (transfers, signing, balances)
 │   ├── amnis/                # Amnis staking operations (stake/unstake)
-│   └── liquidswap/           # Liquidswap swap operations and token helpers
+│   ├── liquidswap/           # Liquidswap swap operations and token helpers
+│   └── aeries/               # Aeries lending protocol operations (lend/borrow/repay/withdraw/create-profile)
 ├── components/               # React components for Raycast UI
 │   ├── aptos/                # Wallet, transfer, NFT, and data lookup components
 │   ├── amnis/                # Amnis staking UI components
-│   └── liquidswap/           # Liquidswap swap UI components
+│   ├── liquidswap/           # Liquidswap swap UI components
+│   └── aeries/               # Aeries lending protocol UI components
 ├── hooks/                    # React hooks
 │   └── useWallet.ts          # Main hook for wallet state management
 ├── utils/                    # Utility functions
@@ -180,8 +182,9 @@ const amountInSmallestUnit = BigInt(Math.floor(humanReadableAmount * Math.pow(10
 The following operations ONLY work on mainnet:
 1. **Amnis Staking** (`src/actions/amnis/`)
 2. **Liquidswap Swap** (`src/actions/liquidswap/swap.ts`)
+3. **Aeries Lending Protocol** (`src/actions/aeries/`)
 
-Hardcoded in action functions: `getClientWithAccount(Network.MAINNET, account)`
+Hardcoded in action functions: `getClientWithAccount(Network.MAINNET, account)` (or default mainnet parameter)
 
 UI validates at component level before showing forms.
 
@@ -219,6 +222,46 @@ const accountUrl = getExplorerUrl("account", address, network);
 ```
 
 Supports: "txn" | "account" | "fungible_asset" types
+
+### Aeries Lending Protocol
+
+Aeries is a mainnet-only lending protocol that enables users to lend (supply) assets and borrow against them.
+
+**Action Functions** (`src/actions/aeries/`):
+- `createAriesProfile(privateKeyHex, network)` - Initialize a new Aeries user profile
+  - Function: `controller::register_user`
+  - Arguments: "Main Account"
+- `lendAriesToken(privateKeyHex, assetType, amount, decimals, network)` - Lend (supply) tokens
+  - Function: `controller::deposit`
+  - Type Arguments: Asset MoveStructId (e.g., "0x1::aptos_coin::AptosCoin")
+  - Arguments: `[amountInSmallestUnit, false]`
+- `borrowAriesToken(privateKeyHex, assetType, amount, decimals, network)` - Borrow tokens
+  - Function: `controller::withdraw`
+  - Type Arguments: Asset MoveStructId
+  - Arguments: `[amountInSmallestUnit, true]`
+- `repayAriesToken(privateKeyHex, assetType, amount, decimals, network)` - Repay borrowed tokens
+  - Function: `controller::repay`
+  - Type Arguments: Asset MoveStructId
+  - Arguments: `[amountInSmallestUnit]`
+- `withdrawAriesToken(privateKeyHex, assetType, amount, decimals, network)` - Withdraw lent tokens
+  - Function: `controller::withdraw`
+  - Type Arguments: Asset MoveStructId
+  - Arguments: `[amountInSmallestUnit, false]`
+
+**Key Features**:
+- All operations are mainnet-only (default network parameter is mainnet)
+- Requires profile creation before lending/borrowing
+- Amount conversion: Use token-specific decimals (default 8 for APT)
+- Follows standard transaction confirmation pattern with `waitForTransaction()` and `success` flag validation
+- Full error handling with descriptive error messages
+
+**UI Components** (`src/components/aeries/`):
+- `AeriesProfileForm.tsx` - Create Aeries profile
+- `AeriesLendForm.tsx` - Supply tokens to Aeries
+- `AeriesBorrowForm.tsx` - Borrow tokens from Aeries
+- `AeriesRepayForm.tsx` - Repay borrowed tokens
+- `AeriesWithdrawForm.tsx` - Withdraw supplied tokens
+- `AeriesOperations.tsx` - Container component (network validation and navigation)
 
 ## Common Development Patterns
 
