@@ -32,6 +32,13 @@ A powerful Raycast extension for comprehensive interaction with the Aptos blockc
   - Borrow tokens against collateral
   - Repay loans and withdraw supplied assets
 
+- **Joule Lending Protocol** (Mainnet only)
+  - Lend (supply) tokens to positions
+  - Borrow tokens against supplied collateral
+  - Repay borrowed tokens
+  - Withdraw supplied tokens
+  - Claim pool rewards
+
 ### Data Queries
 - Look up NFT information
 - Query fungible asset (FA) metadata
@@ -67,10 +74,11 @@ Launch the extension with the `Better` command in Raycast. You'll be presented w
 1. **Create/Import Wallet** - Set up your Aptos wallet
 2. **View Balance** - Check your current balance
 3. **Send Transactions** - Transfer tokens to addresses
-4. **Stake/Unstake** - Manage staking positions
-5. **Swap Tokens** - Trade on Liquidswap
-6. **Lend/Borrow** - Interact with Aeries lending
-7. **Query Data** - Look up NFTs and asset information
+4. **Stake/Unstake** - Manage staking positions with Amnis
+5. **Swap Tokens** - Trade on Liquidswap DEX
+6. **Lend/Borrow** - Interact with Aeries or Joule lending protocols
+7. **Claim Rewards** - Claim rewards from Joule pool
+8. **Query Data** - Look up NFTs and asset information
 
 ## Supported Networks
 
@@ -106,12 +114,14 @@ src/
 │   ├── aptos/                # Core operations
 │   ├── amnis/                # Staking protocol
 │   ├── liquidswap/           # DEX operations
-│   └── aeries/               # Lending protocol
+│   ├── aeries/               # Aeries lending protocol
+│   └── joule/                # Joule lending protocol
 ├── components/               # React UI components
 │   ├── aptos/
 │   ├── amnis/
 │   ├── liquidswap/
-│   └── aeries/
+│   ├── aeries/
+│   └── joule/
 ├── hooks/                    # React hooks
 ├── utils/                    # Utility functions
 ├── constants/                # Application constants
@@ -131,6 +141,7 @@ src/
 - **Amnis** - Liquid staking protocol
 - **Liquidswap** - Automated market maker (DEX)
 - **Aeries** - Decentralized lending protocol
+- **Joule** - Decentralized lending protocol with positions
 
 ## Troubleshooting
 

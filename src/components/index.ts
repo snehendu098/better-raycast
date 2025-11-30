@@ -41,3 +41,11 @@ export { default as AeriesBorrowForm } from "./aeries/AeriesBorrowForm";
 export { default as AeriesRepayForm } from "./aeries/AeriesRepayForm";
 export { default as AeriesWithdrawForm } from "./aeries/AeriesWithdrawForm";
 export { default as AeriesProfileForm } from "./aeries/AeriesProfileForm";
+
+// Joule components
+export { default as JouleOperations } from "./joule/JouleOperations";
+export { default as JouleLendForm } from "./joule/JouleLendForm";
+export { default as JouleBorrowForm } from "./joule/JouleBorrowForm";
+export { default as JouleRepayForm } from "./joule/JouleRepayForm";
+export { default as JouleWithdrawForm } from "./joule/JouleWithdrawForm";
+export { default as JouleClaimRewardForm } from "./joule/JouleClaimRewardForm";

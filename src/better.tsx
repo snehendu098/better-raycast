@@ -9,6 +9,7 @@ import {
   AmnisOperations,
   LiquidswapOperations,
   AeriesOperations,
+  JouleOperations,
 } from "./components";
 
 export default function Command() {
@@ -77,6 +78,13 @@ export default function Command() {
         onOperationComplete={refreshBalance}
       />
       <LiquidswapOperations
+        network={network}
+        privateKey={privateKey}
+        address={address || ""}
+        onNetworkChange={handleNetworkChange}
+        onOperationComplete={refreshBalance}
+      />
+      <JouleOperations
         network={network}
         privateKey={privateKey}
         address={address || ""}

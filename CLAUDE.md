@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Better** is a Raycast extension that provides a comprehensive interface for interacting with the Aptos blockchain. It enables users to manage wallets, perform transactions, stake tokens, swap tokens via Liquidswap DEX, lend/borrow assets via Aeries lending protocol, and query NFT/fungible asset data.
+**Better** is a Raycast extension that provides a comprehensive interface for interacting with the Aptos blockchain. It enables users to manage wallets, perform transactions, stake tokens, swap tokens via Liquidswap DEX, lend/borrow assets via Aeries and Joule lending protocols, and query NFT/fungible asset data.
 
 **Tech Stack:**
 - Raycast API for CLI/command interface
@@ -43,12 +43,14 @@ src/
 │   ├── aptos/                # Core Aptos operations (transfers, signing, balances)
 │   ├── amnis/                # Amnis staking operations (stake/unstake)
 │   ├── liquidswap/           # Liquidswap swap operations and token helpers
-│   └── aeries/               # Aeries lending protocol operations (lend/borrow/repay/withdraw/create-profile)
+│   ├── aeries/               # Aeries lending protocol operations (lend/borrow/repay/withdraw/create-profile)
+│   └── joule/                # Joule lending protocol operations (lend/borrow/repay/withdraw/claim-reward)
 ├── components/               # React components for Raycast UI
 │   ├── aptos/                # Wallet, transfer, NFT, and data lookup components
 │   ├── amnis/                # Amnis staking UI components
 │   ├── liquidswap/           # Liquidswap swap UI components
-│   └── aeries/               # Aeries lending protocol UI components
+│   ├── aeries/               # Aeries lending protocol UI components
+│   └── joule/                # Joule lending protocol UI components
 ├── hooks/                    # React hooks
 │   └── useWallet.ts          # Main hook for wallet state management
 ├── utils/                    # Utility functions
@@ -82,9 +84,9 @@ src/
   - Log errors to console for debugging without breaking UI
 
 #### 3. **Network Validation Pattern**
-- **Mainnet-Only Operations**: Amnis staking and Liquidswap swap are mainnet-only
+- **Mainnet-Only Operations**: Amnis staking, Liquidswap swap, Aeries lending, and Joule lending are mainnet-only
 - Implementation: Container component checks network and shows warning if not mainnet
-- Pattern (see `AmnisOperations.tsx`):
+- Pattern (see `AmnisOperations.tsx` or `JouleOperations.tsx`):
   ```tsx
   if (network !== "mainnet") {
     return <List.Section>Warning banner with switch action</List.Section>
@@ -183,10 +185,11 @@ The following operations ONLY work on mainnet:
 1. **Amnis Staking** (`src/actions/amnis/`)
 2. **Liquidswap Swap** (`src/actions/liquidswap/swap.ts`)
 3. **Aeries Lending Protocol** (`src/actions/aeries/`)
+4. **Joule Lending Protocol** (`src/actions/joule/`)
 
-Hardcoded in action functions: `getClientWithAccount(Network.MAINNET, account)` (or default mainnet parameter)
+Hardcoded in action functions: `getClientWithAccount(network, account)` with default mainnet parameter
 
-UI validates at component level before showing forms.
+UI validates at component level before showing forms with mainnet-only warning.
 
 ### Error Handling Best Practices
 
@@ -262,6 +265,52 @@ Aeries is a mainnet-only lending protocol that enables users to lend (supply) as
 - `AeriesRepayForm.tsx` - Repay borrowed tokens
 - `AeriesWithdrawForm.tsx` - Withdraw supplied tokens
 - `AeriesOperations.tsx` - Container component (network validation and navigation)
+
+### Joule Lending Protocol
+
+Joule is a mainnet-only lending protocol that enables users to lend (supply) assets to positions and borrow against them.
+
+**Action Functions** (`src/actions/joule/`):
+- `lendToken(privateKeyHex, assetType, amount, positionId, decimals, newPosition, fungibleAsset, network)` - Lend tokens to a position
+  - Function: `0x2fe576faa841347a9b1b32c869685deb75a15e3f62dfe37cbd6d52cc403a16f6::pool::lend` (coin) or `lend_fa` (fungible asset)
+  - Type Arguments: Asset MoveStructId (for coin standard only)
+  - Arguments: `[positionId, amountInSmallestUnit, newPosition]` (coin) or `[positionId, assetType, newPosition, amountInSmallestUnit]` (FA)
+- `borrowToken(privateKeyHex, assetType, amount, positionId, decimals, fungibleAsset, network)` - Borrow tokens from a position
+  - Function: `0x2fe576faa841347a9b1b32c869685deb75a15e3f62dfe37cbd6d52cc403a16f6::pool::borrow` (coin) or `borrow_fa` (fungible asset)
+  - Arguments: `[positionId, amountInSmallestUnit]` (coin) or `[positionId, assetType, amountInSmallestUnit]` (FA)
+- `repayToken(privateKeyHex, assetType, amount, positionId, decimals, fungibleAsset, network)` - Repay borrowed tokens
+  - Function: `0x2fe576faa841347a9b1b32c869685deb75a15e3f62dfe37cbd6d52cc403a16f6::pool::repay` (coin) or `repay_fa` (fungible asset)
+  - Arguments: `[positionId, amountInSmallestUnit]` (coin) or `[positionId, assetType, amountInSmallestUnit]` (FA)
+- `withdrawToken(privateKeyHex, assetType, amount, positionId, decimals, fungibleAsset, network)` - Withdraw lent tokens from a position
+  - Function: `0x2fe576faa841347a9b1b32c869685deb75a15e3f62dfe37cbd6d52cc403a16f6::pool::withdraw` (coin) or `withdraw_fa` (fungible asset)
+  - Arguments: `[positionId, amountInSmallestUnit]` (coin) or `[positionId, assetType, amountInSmallestUnit]` (FA)
+- `claimReward(privateKeyHex, rewardCoinType, network)` - Claim rewards from Joule pool
+  - Function: `0x2fe576faa841347a9b1b32c869685deb75a15e3f62dfe37cbd6d52cc403a16f6::pool::claim_rewards`
+  - Type Arguments: Reward coin type (APT or Amnis APT)
+  - Arguments: `[rewardCoinType, incentiveType]`
+- `getUserPosition(userAddress, positionId, network)` - Get details about a user's position (read-only)
+  - Function: `0x2fe576faa841347a9b1b32c869685deb75a15e3f62dfe37cbd6d52cc403a16f6::pool::user_position_details`
+- `getUserAllPositions(userAddress, network)` - Get all user positions (read-only)
+  - Function: `0x2fe576faa841347a9b1b32c869685deb75a15e3f62dfe37cbd6d52cc403a16f6::pool::user_positions_map`
+- `getPoolDetails(mint)` - Get pool details from Joule API (read-only)
+  - Source: `https://price-api.joule.finance/api/market`
+  - Returns: Pool metadata including LTV, APY, market size, borrowed amount
+
+**Key Features**:
+- All operations are mainnet-only (default network parameter is mainnet)
+- Supports both coin standard and fungible asset (FA) tokens
+- Amount conversion: Use token-specific decimals (default 8 for APT)
+- Follows standard transaction confirmation pattern with `waitForTransaction()` and `success` flag validation
+- Full error handling with descriptive error messages
+- Position ID required for all write operations
+
+**UI Components** (`src/components/joule/`):
+- `JouleLendForm.tsx` - Supply tokens to a position
+- `JouleBorrowForm.tsx` - Borrow tokens from a position
+- `JouleRepayForm.tsx` - Repay borrowed tokens
+- `JouleWithdrawForm.tsx` - Withdraw supplied tokens
+- `JouleClaimRewardForm.tsx` - Claim pool rewards
+- `JouleOperations.tsx` - Container component (network validation and navigation)
 
 ## Common Development Patterns
 
