@@ -8,10 +8,7 @@ import {
   getAllBalances,
   getTransactionHistory,
 } from "../../actions/aptos";
-import {
-  getExplorerUrl,
-  formatAddress,
-} from "../../utils/aptos";
+import { getExplorerUrl, formatAddress } from "../../utils/aptos";
 import { useFetch } from "../../hooks";
 import { NetworkType, CoinBalance, TransactionInfo } from "../../types";
 import { BALANCE_DECIMALS } from "../../constants";
@@ -87,10 +84,7 @@ export default function AccountDetails({ address, network }: AccountDetailsProps
           icon={{ source: Icon.Wallet, tintColor: Color.Blue }}
           title={data?.ansName || formatAddress(address)}
           subtitle={data?.ansName ? address : undefined}
-          accessories={[
-            { tag: { value: network.toUpperCase(), color: Color.Purple } },
-            { icon: Icon.Globe },
-          ]}
+          accessories={[{ tag: { value: network.toUpperCase(), color: Color.Purple } }, { icon: Icon.Globe }]}
           actions={
             <ActionPanel>
               <Action.OpenInBrowser title="View on Explorer" url={getExplorerUrl("account", address, network)} />
@@ -106,26 +100,6 @@ export default function AccountDetails({ address, network }: AccountDetailsProps
           actions={
             <ActionPanel>
               <Action.CopyToClipboard title="Copy Balance" content={data?.balance?.toString() || "0"} />
-              <Action title="Refresh" icon={Icon.ArrowClockwise} onAction={refetch} />
-            </ActionPanel>
-          }
-        />
-        <List.Item
-          icon={{ source: Icon.Lock, tintColor: data?.stakedAmount ? Color.Orange : Color.SecondaryText }}
-          title="Staked Amount"
-          accessories={[
-            {
-              text: {
-                value: data?.stakedAmount ? `${formatBalance(data.stakedAmount)} APT` : "None",
-                color: data?.stakedAmount ? Color.PrimaryText : Color.SecondaryText,
-              },
-            },
-          ]}
-          actions={
-            <ActionPanel>
-              {data?.stakedAmount && (
-                <Action.CopyToClipboard title="Copy Staked Amount" content={data.stakedAmount.toString()} />
-              )}
               <Action title="Refresh" icon={Icon.ArrowClockwise} onAction={refetch} />
             </ActionPanel>
           }
@@ -177,7 +151,6 @@ export default function AccountDetails({ address, network }: AccountDetailsProps
               title={tx.type !== "Unknown" ? tx.type.split("::").pop() || tx.type : `Transaction`}
               subtitle={`v${tx.version}`}
               accessories={[
-                { date: new Date(tx.timestamp), tooltip: tx.timestamp },
                 { tag: { value: tx.success ? "Success" : "Failed", color: tx.success ? Color.Green : Color.Red } },
               ]}
               actions={
